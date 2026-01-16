@@ -5,7 +5,7 @@ const app = express();
 const PORT = process.env.PORT || 8000;
 
 // Configuration de la cible (Ton serveur Minestrator)
-const TARGET_URL = 'http://91.197.6.99:42037';
+const TARGET_URL = 'http://91.197.6.141:42037';
 
 // Création du Proxy
 const mapProxy = createProxyMiddleware({
