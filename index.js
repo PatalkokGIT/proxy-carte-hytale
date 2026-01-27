@@ -1,7 +1,7 @@
 const express = require('express');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const cors = require('cors');
-require('dotenv').config(); // Pour tester en local avec un fichier .env
+require('dotenv').config(); 
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -10,21 +10,22 @@ const PORT = process.env.PORT || 8000;
 const MAP_TARGET_URL = 'http://91.197.6.141:42037';
 
 // --- SÉCURITÉ CORS ---
-// Autorise uniquement ton site web à utiliser cette API
 app.use(cors({
     origin: [
-        'https://ht.spiral-buddies.fr',      // Ton sous-domaine de test
-        'https://spiral-buddies.fr',         // Ton domaine principal (celui qui bloquait)
-        'https://www.spiral-buddies.fr',     // Ton domaine avec www
-        'https://spiral-buddies.youbieflix.synology.me/'           
+        'https://ht.spiral-buddies.fr',      
+        'https://spiral-buddies.fr',         
+        'https://www.spiral-buddies.fr',     
+        'https://spiral-buddies.youbieflix.synology.me'           
     ],
     methods: ['GET', 'POST'],
-    credentials: true // Souvent nécessaire si des cookies sont impliqués
+    credentials: true 
 }));
+
+// Pour pouvoir lire le JSON dans les requêtes POST entrantes (sécurité)
+app.use(express.json());
 
 // ==========================================
 // 🔐 ZONE SÉCURISÉE - API DE VOTE
-// C'est ici qu'on utilise les clés secrètes stockées sur Koyeb
 // ==========================================
 
 app.get('/api/vote/check', async (req, res) => {
@@ -36,12 +37,13 @@ app.get('/api/vote/check', async (req, res) => {
 
     try {
         let apiUrl = '';
-        let apiData = {};
+        let method = 'GET'; // Par défaut
+        let headers = {};
+        let body = null;
         
         // Switch selon le site demandé par le frontend
         switch (site) {
             case 'hytale-game':
-                // Utilise la variable d'environnement (Invisible pour le client)
                 const hgKey = process.env.HYTALE_GAME_SECRET; 
                 apiUrl = `https://hytale.game/wp-json/hytale-api/v1/check?username=${encodeURIComponent(user)}&secret_key=${hgKey}`;
                 break;
@@ -57,9 +59,18 @@ app.get('/api/vote/check', async (req, res) => {
                 break;
             
             case 'serveur-hytale-gg':
-                 // Pas de clé secrète critique ici, mais on centralise quand même
+                 // === CORRECTION MAJEURE ICI ===
+                 // On passe en méthode POST sur /verify pour obtenir le timestamp (vote_time)
+                 // Nécessaire pour le compte à rebours précis.
                  const ggId = process.env.SERVEUR_HYTALE_GG_ID;
-                 apiUrl = `https://serveur-hytale.gg/api/v1/votes/status?pseudo=${encodeURIComponent(user)}&server_id=${ggId}`;
+                 apiUrl = `https://serveur-hytale.gg/api/v1/votes/verify`;
+                 method = 'POST';
+                 headers = { 'Content-Type': 'application/json' };
+                 // On envoie le body requis par leur API "Options avancées"
+                 body = JSON.stringify({
+                     pseudo: user,
+                     server_id: parseInt(ggId) // Conversion en entier par sécurité
+                 });
                  break;
 
             case 'serveurhytale-fr':
@@ -71,12 +82,12 @@ app.get('/api/vote/check', async (req, res) => {
                 return res.status(400).json({ error: "Site inconnu" });
         }
 
-        // Exécution de la requête vers le site de vote (Côté Serveur)
-        // Note: fetch est natif depuis Node 18+. Si erreur, utilise axios.
-        const response = await fetch(apiUrl);
+        // Exécution de la requête vers le site de vote
+        // On passe method, headers et body (qui sont null/vide pour les GET, remplis pour le POST)
+        const response = await fetch(apiUrl, { method, headers, body });
         const data = await response.json();
 
-        // On renvoie la réponse propre au frontend
+        // On renvoie la réponse au frontend
         res.json(data);
 
     } catch (error) {
@@ -87,7 +98,7 @@ app.get('/api/vote/check', async (req, res) => {
 
 // Endpoint pour CLAIM (Validation) - Uniquement pour Hytale.game et Servs
 app.post('/api/vote/claim', async (req, res) => {
-    const { site, user, voteId } = req.query; // On peut aussi utiliser req.body avec body-parser
+    const { site, user, voteId } = req.query; 
 
     try {
         let url = '';
@@ -132,7 +143,6 @@ const mapProxy = createProxyMiddleware({
     },
     onError: (err, req, res) => {
         console.error('[Proxy Error]', err.message);
-        // On évite d'envoyer une réponse si les headers sont déjà partis
         if (!res.headersSent) {
             res.status(502).send('La carte Hytale est inaccessible');
         }
@@ -151,5 +161,3 @@ const server = app.listen(PORT, () => {
 server.on('upgrade', (req, socket, head) => {
     mapProxy.upgrade(req, socket, head);
 });
-
-
