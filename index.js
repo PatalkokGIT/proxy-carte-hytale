@@ -12,13 +12,14 @@ const MAP_TARGET_URL = 'http://91.197.6.141:42037';
 // --- SÉCURITÉ CORS ---
 // Autorise uniquement ton site web à utiliser cette API
 app.use(cors({
-    origin: ['https://ht.spiral-buddies.fr', 'http://127.0.0.1:5500'],
-    'https://ht.spiral-buddies.fr',      // Ton sous-domaine de test
-    'https://spiral-buddies.fr',         // Ton domaine principal (celui qui bloquait)
-    'https://www.spiral-buddies.fr',  
-    'https://spiral-buddies.youbieflix.synology.me/' // Ton domaine avec www
-
-    methods: ['GET', 'POST']
+    origin: [
+        'https://ht.spiral-buddies.fr',      // Ton sous-domaine de test
+        'https://spiral-buddies.fr',         // Ton domaine principal (celui qui bloquait)
+        'https://www.spiral-buddies.fr',     // Ton domaine avec www
+        'https://spiral-buddies.youbieflix.synology.me/'           
+    ],
+    methods: ['GET', 'POST'],
+    credentials: true // Souvent nécessaire si des cookies sont impliqués
 }));
 
 // ==========================================
@@ -150,4 +151,5 @@ const server = app.listen(PORT, () => {
 server.on('upgrade', (req, socket, head) => {
     mapProxy.upgrade(req, socket, head);
 });
+
 
