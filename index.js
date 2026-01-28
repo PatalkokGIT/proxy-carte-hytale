@@ -166,4 +166,5 @@ const server = app.listen(PORT, () => {
 // Upgrade WebSocket manuel
 server.on('upgrade', (req, socket, head) => {
     mapProxy.upgrade(req, socket, head);
-});x
+});
+
