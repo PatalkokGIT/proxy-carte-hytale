@@ -1,12 +1,13 @@
 {
-  "name": "proxy-carte-hytale",
-  "version": "1.0.0",
-  "description": "Proxy securise Koyeb pour API et Carte",
+  "name": "proxy-carte-hytale-discord",
+  "version": "2.0.0",
+  "description": "Proxy securise Koyeb pour API, Carte et Discord",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
+    "discord.js": "^14.14.1",
     "express": "^4.18.2",
     "http-proxy-middleware": "^2.0.6",
     "cors": "^2.8.5",
